@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{%import "bootstrap/wtf.html" as wtf%}
+
+{%block app_content%}
+  {%if form%}
+  <h1>Hello, {{ current_user.username }}!</h1>
+  {{wtf.quick_form(form)}}
+  <hr>
+  <h2>
+    <span class='glyphicon glyphicon-link' aria-hidden="true"></span>
+    Following Posts
+  </h2>
+  {%else%}
+  <h1>
+    <span class='glyphicon glyphicon-search' aria-hidden="true"></span>
+    Explore all posts
+  </h1>
+  <hr>
+  {%endif%}
+
+
+  <!-- 포스트뷰 생성 -->
+
+  {% for post in posts %}
+    <h4>{%include '_post.html'%}</h4>
+  {% endfor %}
+
+  <!-- 페이지네비게이터 -->
+  <nav aria-label="...">
+    <ul class="pager">
+      <li class="previous{%if not prev_url%} disabled{%endif%}">
+        <a href="{{prev_url or '#'}}">
+          <span aria-hidden="true">&larr;</span> Newer posts
+        </a>
+      </li>
+      <li class="next{%if not next_url%} disabled{%endif%}">
+        <a href="{{next_url or '#'}}">
+          Older posts <span aria-hidden="true">&rarr;</span>
+        </a>
+      </li>
+    </ul>
+  </nav>
+{%endblock%}

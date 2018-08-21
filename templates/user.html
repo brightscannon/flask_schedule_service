@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+
+{% block app_content %}
+
+{%if user == current_user%}
+
+  <h3 style="color:green;"><span class="glyphicon glyphicon-user" aria-hidden="true"></span> This is Your Profile</h3>
+
+{%endif%}
+  <div class="row">
+    <div class="col-md-2">
+      <img src="{{user.avatar(150)}}">
+    </div>
+    <div class="col-md-4">
+      <h1>User : {{user.username}}</h1>
+      <!-- 다이렉트 메세지 보내기 -->
+      {% if user != current_user %}
+      <p>
+        <a href="{{url_for('send_message', recipient=user.username)}}">
+          {{ _('Send private message')}}
+        </a>
+      </p>
+      {%endif%}
+      <span class="label label-primary">{{user.followers.count()}} follower</span>
+      <span class="label label-primary">{{user.followed.count()}} following</span>
+      <br>
+
+      {%if user.about_me %}<p>{{user.about_me}}</p>{%endif%}
+      {%if user.last_seen%}<p>Last seen on: {{moment(user.last_seen).format('LLL')}}</p>{%endif%}
+
+      {%if user == current_user%}
+      <p><a href="{{url_for('edit_profile')}}">Edit your profile</a></p>
+      {%elif not current_user.is_following(user)%}
+      <p><a href="{{url_for('follow', username=user.username)}}">Follow</a></p>
+      {%else%}
+      <p><a href="{{url_for('unfollow', username=user.username)}}">Unfollow</a></p>
+      {%endif%}
+    </div>
+  </div>
+  <hr>
+  <h3>Your posts</h3>
+  {%for post in posts%}
+    {%include '_post.html'%}
+  {%endfor%}
+  {%if prev_url%}
+  <a href="{{prev_url}}">Newer posts</a>
+  {%endif%}
+  {%if next_url%}
+  <a href="{{next_url}}">Older posts</a>
+  {%endif%}
+{%endblock%}
