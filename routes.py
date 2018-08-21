@@ -1,10 +1,10 @@
 from flask import render_template, flash, redirect, url_for, request
 from werkzeug.urls import url_parse
 from app import app, db
-from app.forms import LoginForm, RegistrationForm, EditProfileForm, PostForm, ResetPasswordRequestForm, ResetPasswordForm
+from app.forms import LoginForm, RegistrationForm, EditProfileForm, PostForm, ResetPasswordRequestForm, ResetPasswordForm, ScheduleForm
 from app.email import send_password_reset_email
 from flask_login import login_required, current_user, login_user, logout_user
-from app.models import User, Post, Notification
+from app.models import User, Post, Notification, Schedule
 from datetime import datetime
 
 from flask import g
@@ -17,6 +17,8 @@ from app.translate import translate
 from app.forms import MessageForm, SearchForm
 from app.models import Message
 
+# 시간입력정보를 알맞게 파싱해줌
+from dateutil.parser import parse as timeparse
 
 @app.before_request
 def before_request():
@@ -44,10 +46,10 @@ def index():
         db.session.commit()
         flash('Your post is now live!')
         return redirect(url_for('index'))
-    user = {'username':'Bright'}
+    # user = {'username':'Bright'}
     # 포스트 뷰 및 페이지네이션&네비게이션
     page = request.args.get('page',1, type=int)
-    posts = current_user.followed_posts().paginate(page, app.config['POSTS_PER_PAGE'],False)
+    posts = current_user.followed_posts().paginate(page, app.config['POSTS_PER_PAGE'], False)
     next_url = url_for('index',page=posts.next_num) \
         if posts.has_next else None
     prev_url = url_for('index', page=posts.prev_num) \
@@ -72,7 +74,10 @@ def login():
         next_page = request.args.get('next')
         if not next_page or url_parse(next_page).netloc != '':
             next_page = url_for('index')
-        return redirect(url_for(next_page[1:])) # error : /index로 입력되는데 /를 해석못하는 문제가 있음. 강제로 /제거함
+        try:
+            return redirect(url_for(next_page[1:])) # error : /index로 입력되는데 /를 해석못하는 문제가 있음. 강제로 /제거함
+        except:
+            return redirect(url_for('explore')) # 최초로그인일경우
     return render_template('login.html', title='Sign In', form=form) #지정된 form을 받는다.
 
 #로그아웃하기
@@ -197,6 +202,58 @@ def explore():
         if posts.has_prev else None
     return render_template('index.html', title='Explore',
         posts=posts.items, next_url=next_url, prev_url=prev_url)
+
+
+# 이건 스케줄러창
+@app.route('/scheduler', methods=['GET','POST'])
+@login_required
+def scheduler():
+    form = ScheduleForm()
+    if form.validate_on_submit():
+        # 일정 rawtext 자르고 일정화하기 수행
+        temp = form.rawtext.data.split("\n",2)
+        if temp[0].find('~')!=-1:
+            due = 1
+            dates = temp[0].split('~')
+            ndates = []
+            for date in dates:
+                try:
+                    ndates.append(timeparse(date.strip()).strftime("%Y-%m-%d %H:%M"))
+                except:
+                    ndates.append(ndates[0])
+        else:
+            due = 0
+            ndates = []
+            # 일부러 두번넣는다.
+            ndates.append(timeparse(temp[0].strip()).strftime("%Y-%m-%d %H:%M"))
+            ndates.append(str(ndates[0]))
+
+        print("입력된 일정 : ",ndates)
+        if len(temp)==3:
+            schedule = Schedule(rawtext=form.rawtext.data,period_start=ndates[0],period_end=ndates[1],
+                                title=temp[1],body=temp[2], author=current_user)
+        elif len(temp)==2:
+            schedule = Schedule(rawtext=form.rawtext.data,period_start=ndates[0],period_end=ndates[1],
+                                title=temp[1],body=temp[1], author=current_user)
+        else :
+            flash('일정의 기간, 제목, 내용 순으로 입력하셔야 합니다')
+            return redirect(url_for('scheduler'))
+        db.session.add(schedule)
+        db.session.commit()
+        flash('New schedule is updated.')
+        return redirect(url_for('scheduler'))
+    user = {'username':'Bright'}
+    # 일정 뷰 및 페이지네이션&네비게이션
+    page = request.args.get('page',1, type=int)
+    schedules = current_user.schedules.order_by(Schedule.period_start.desc()).paginate(
+        page, app.config['SCHEDULES_PER_PAGE'], False)
+    next_url = url_for('scheduler', page=schedules.next_num) \
+        if schedules.has_next else None
+    prev_url = url_for('scheduler', page=schedules.prev_num) \
+        if schedules.has_prev else None
+    return render_template('scheduler.html', title="bright`s home",
+        form=form, schedules=schedules.items, next_url=next_url, prev_url=prev_url)
+
 
 #유저정보 팝업창 (ajax)
 @app.route('/user/<username>/popup')

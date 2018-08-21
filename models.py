@@ -71,6 +71,7 @@ class User(UserMixin, db.Model):
     email = db.Column(db.String(120), index=True, unique=True)
     password_hash = db.Column(db.String(128))
     posts = db.relationship('Post', backref='author', lazy='dynamic')
+    schedules= db.relationship('Schedule', backref='author', lazy='dynamic')
     notifications = db.relationship('Notification', backref='user', lazy='dynamic')
     tasks = db.relationship('Task', backref='user', lazy='dynamic')
 
@@ -113,6 +114,11 @@ class User(UserMixin, db.Model):
                 followers.c.follower_id == self.id)
         own = Post.query.filter_by(user_id=self.id)
         return followed.union(own).order_by(Post.timestamp.desc())
+
+    # 유저 일정관련
+    # def user_schedules(self):
+
+
 
     # 유저 다이렉트 메세지 관련
     messages_sent = db.relationship('Message',
@@ -159,7 +165,7 @@ class User(UserMixin, db.Model):
 
     # 유저 비밀번호 암호화
     @staticmethod
-    def verity_reset_password_token(token):
+    def verify_reset_password_token(token):
         try:
             id = jwt.decode(token, app.config['SECRET_KEY'],
                 algorithms=['HS256'])['reset_password']
@@ -168,7 +174,7 @@ class User(UserMixin, db.Model):
         return User.query.get(id)
 
 
-class Post(db.Model): #엘라스틱써치 사용시 Post(SearchableMixin, db,Model) 사용 
+class Post(db.Model): #엘라스틱써치 사용시 Post(SearchableMixin, db,Model) 사용
     # __searchable__ = ['body'] # 엘라스틱서치
     id = db.Column(db.Integer, primary_key=True)
     body = db.Column(db.String(1200))
@@ -189,6 +195,20 @@ class Message(db.Model):
 
     def __repr__(self):
         return '<Message {}>'.format(self.body)
+
+class Schedule(db.Model):
+    id = db.Column(db.Integer, primary_key=True) #일정의 고유 ID
+    rawtext = db.Column(db.String(1500)) #일정을 텍스트로 받기
+    period_start = db.Column(db.DateTime, default=datetime.utcnow) #일정의 시작시간(미 입력시 현재시간)
+    period_end = db.Column(db.DateTime, default=None) #일정의 끝시간(미 입력시 공백)
+    title = db.Column(db.String(200), default=None) # 일정의 제목, 없으면 공백
+    body = db.Column(db.String(1200)) # 일정의 내용
+    timestamp = db.Column(db.DateTime, index=True, default=datetime.utcnow) #일정 생성/수정시간
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))# 일정을 쓴 사람
+    check_box = db.Column(db.Boolean, default=False)#체크형 일정이면 true
+
+    def __repr__(self):
+        return '<Schedule {}>'.format(self.body)
 
 # 메세지 알림 num
 class Notification(db.Model):
