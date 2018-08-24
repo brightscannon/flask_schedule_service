@@ -115,10 +115,6 @@ class User(UserMixin, db.Model):
         own = Post.query.filter_by(user_id=self.id)
         return followed.union(own).order_by(Post.timestamp.desc())
 
-    # 유저 일정관련
-    # def user_schedules(self):
-
-
 
     # 유저 다이렉트 메세지 관련
     messages_sent = db.relationship('Message',

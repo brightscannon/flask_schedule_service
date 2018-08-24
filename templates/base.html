@@ -16,6 +16,9 @@
 
 <!-- Custom styles for this template -->
 <link href="/static/css/freelancer.min.css" rel="stylesheet">
+
+<!-- 캘린더용 CSS제작 -->
+<link href="/static/css/calendar_v1.css" rel="stylesheet">
 {% endblock %}
 
 
@@ -85,7 +88,7 @@
 
 
 {%block content%}
-  <div class="container">
+  <div class="container-fluid">
     {%with messages = get_flashed_messages()%}
     {%if messages%}
       {%for message in messages %}
@@ -206,11 +209,13 @@
         }
       )
     });
-    //메세지 카운트(다이렉트 메세지 알림)
+
+    //메세지 카운트 (다이렉트 메세지 알림)
     function set_message_count(n){
       $('#message_count').text(n);
       $('#message_count').css('visibility', n ? 'visible':'hidden');
     }
+
     {%if current_user.is_authenticated%}
     $(function(){
       var since = 0;
@@ -224,11 +229,12 @@
             }
           }
         );
-      }, 10000);
+      }, 15000);
     });
-
     {%endif%}
   </script>
+
+
 
   <!-- Bootstrap core JavaScript -->
   <!-- <script src="/static/vendor/jquery/jquery.min.js"></script>

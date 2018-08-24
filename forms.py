@@ -63,9 +63,17 @@ class PostForm(FlaskForm):
     submit = SubmitField(_l('Submit'))
 
 class ScheduleForm(FlaskForm):
-    rawtext = TextAreaField(_l('새로운 일정을 만드세요(due_times(2018-00-00 15:00 ~ <end>),\ntitle,\ndescription)'), validators=[
+    rawtext = TextAreaField(_l('새로운 일정을 만드세요. 입력예 )2018-00-00 15:00 ~ ,title, description)'), validators=[
         DataRequired(), Length(min=1, max=1500)])
     submit = SubmitField(_l('Submit'))
+
+class EditScheduleForm(FlaskForm):
+    rawtext = TextAreaField(_l('일정 rawtext 수정'), validators=[
+        DataRequired(), Length(min=1, max=1500)])
+    submit = SubmitField(_l('Edit schedule'))
+
+class DelScheduleForm(FlaskForm):
+    submit2 = SubmitField('Trash this Schedule')
 
 class MessageForm(FlaskForm):
     message = TextAreaField(_l('Message'), validators=[

@@ -1,7 +1,9 @@
 from flask import render_template, flash, redirect, url_for, request
 from werkzeug.urls import url_parse
 from app import app, db
-from app.forms import LoginForm, RegistrationForm, EditProfileForm, PostForm, ResetPasswordRequestForm, ResetPasswordForm, ScheduleForm
+from app.forms import LoginForm, RegistrationForm, \
+            EditProfileForm, PostForm, ResetPasswordRequestForm, \
+            ResetPasswordForm, ScheduleForm, EditScheduleForm, DelScheduleForm
 from app.email import send_password_reset_email
 from flask_login import login_required, current_user, login_user, logout_user
 from app.models import User, Post, Notification, Schedule
@@ -19,6 +21,28 @@ from app.models import Message
 
 # 시간입력정보를 알맞게 파싱해줌
 from dateutil.parser import parse as timeparse
+
+def schedule_rawtext_parser(text):
+    temp = text.split("\n",2)
+    if temp[0].find('~')!=-1:
+        due = 1
+        dates = temp[0].split('~')
+        ndates = []
+        for date in dates:
+            try:#                 parse라는 말이 다용도라서.. timeparse로 변경하여 사용
+                ndates.append(timeparse(date.strip()).strftime("%Y-%m-%d %H:%M"))
+            except:
+                ndates.append(ndates[0])
+    else:
+        due = 0
+        ndates = []
+        # 일부러 두번넣는다.
+        ndates.append(timeparse(temp[0].strip()).strftime("%Y-%m-%d %H:%M"))
+        ndates.append(str(ndates[0]))
+
+    return ndates, temp
+
+
 
 @app.before_request
 def before_request():
@@ -154,7 +178,7 @@ def edit_profile():
         current_user.about_me = form.about_me.data
         db.session.commit()
         flash('Your changes have been saved.')
-        return redirect(url_for('edit_profile'))
+        return redirect(url_for('user',username=current_user.username,page=1))
     elif request.method == 'GET':
         form.username.data = current_user.username
         form.about_me.data = current_user.about_me
@@ -168,11 +192,11 @@ def follow(username):
         flash('User {} not found.'.format(username))
         return redirect(url_for('index'))
     if user == current_user:
-        flash('You connot follow yourself!')
+        flash('You cannot follow yourself!')
         return redirect(url_for('user', username=username))
     current_user.follow(user)
     db.session.commit()
-    flash('You are following {}'.format(username))
+    flash('Now You are following {}'.format(username))
     return redirect(url_for('user',username=username))
 
 @app.route('/unfollow/<username>')
@@ -183,11 +207,11 @@ def unfollow(username):
         flash('User {} not found.'.format(username))
         return redirect(url_for('index'))
     if user == current_user:
-        flash('You connot unfollow yourself!')
+        flash('You cannot unfollow yourself!')
         return redirect(url_for('user',username=username))
     current_user.unfollow(user)
     db.session.commit()
-    flash('You are not following {}.'.format(username))
+    flash('Now You are not following {}.'.format(username))
     return redirect(url_for('user', username=username))
 
 @app.route('/explore')
@@ -211,22 +235,7 @@ def scheduler():
     form = ScheduleForm()
     if form.validate_on_submit():
         # 일정 rawtext 자르고 일정화하기 수행
-        temp = form.rawtext.data.split("\n",2)
-        if temp[0].find('~')!=-1:
-            due = 1
-            dates = temp[0].split('~')
-            ndates = []
-            for date in dates:
-                try:
-                    ndates.append(timeparse(date.strip()).strftime("%Y-%m-%d %H:%M"))
-                except:
-                    ndates.append(ndates[0])
-        else:
-            due = 0
-            ndates = []
-            # 일부러 두번넣는다.
-            ndates.append(timeparse(temp[0].strip()).strftime("%Y-%m-%d %H:%M"))
-            ndates.append(str(ndates[0]))
+        ndates, temp = schedule_rawtext_parser(form.rawtext.data) # 위에 함수 만들어놓음
 
         print("입력된 일정 : ",ndates)
         if len(temp)==3:
@@ -253,6 +262,65 @@ def scheduler():
         if schedules.has_prev else None
     return render_template('scheduler.html', title="bright`s home",
         form=form, schedules=schedules.items, next_url=next_url, prev_url=prev_url)
+
+# 일정 edit
+@app.route('/edit_schedule/<schedule_id>', methods=['GET','POST'])
+@login_required
+def edit_schedule(schedule_id):
+
+    schedule = Schedule.query.filter_by(id=schedule_id).first()
+    # 작성자가 맞는지 확인
+    if current_user.id != schedule.user_id:
+        flash('This account is not permitted approach this schedule!')
+        return redirect(url_for('scheduler',page=1))
+
+    form = EditScheduleForm()
+    trash_button = DelScheduleForm()
+
+    if form.validate_on_submit(): # 일정 수정
+        ndates, temp= schedule_rawtext_parser(form.rawtext.data)
+        print("입력된 일정 : ",ndates)
+        if len(temp)==3:
+            schedule.rawtext=form.rawtext.data
+            schedule.period_start=ndates[0]
+            schedule.period_end=ndates[1]
+            schedule.title=temp[1]
+            schedule.body=temp[2]
+        elif len(temp)==2:
+            schedule.rawtext=form.rawtext.data
+            schedule.period_start=ndates[0]
+            schedule.period_end=ndates[1]
+            schedule.title=temp[1]
+            schedule.body=temp[1]
+        else :
+            flash('일정시간대(기간), 제목, 내용(생략가능) 순으로 수정하셔야 합니다')
+            return redirect(url_for('edit_schedule'))
+        db.session.add(schedule)
+        db.session.commit()
+        flash('Changes have been saved.')
+        return redirect(url_for('scheduler', page=1))
+
+    elif trash_button.validate_on_submit(): # 일정 삭제
+        # print("일정 지우기 실행! ㅜㅜ")
+        Schedule.query.filter_by(id=schedule_id).delete()
+        db.session.commit()
+        flash('Complete delete schedule!')
+        return redirect(url_for('scheduler', page=1))
+
+    elif request.method == 'GET':
+        # print("수정할 일정 받기 실행!! ")
+        # form.id.data = schedule_id
+        form.rawtext.data = schedule.rawtext
+    return render_template('edit_schedule.html', title='Edit schedule', form=form, form_trash=trash_button)
+
+#일정을 달력형태로 보기
+@app.route('/calendar', methods=['GET','POST'])
+@login_required
+def calendar():
+    form = ScheduleForm()
+    schedules = current_user.schedules.order_by(Schedule.period_start.desc())
+    return render_template('calendar.html', title="bright`s home",
+        form=form)#, schedules=schedules.items)
 
 
 #유저정보 팝업창 (ajax)
