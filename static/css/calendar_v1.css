@@ -11,8 +11,10 @@
   margin-left: auto;
   margin-right: auto;
 } */
+
 .calendar-base{
   margin:10px;
+
 }
 .calendar-YearMonth{
   display:inline-block;
@@ -25,4 +27,8 @@
   font-size:0.8em;
   font-weight:600;
   text-align:center;
+}
+
+.cal-width{
+  width:10%
 }

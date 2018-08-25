@@ -22,6 +22,7 @@ from app.models import Message
 # 시간입력정보를 알맞게 파싱해줌
 from dateutil.parser import parse as timeparse
 
+# 웹 함수(스케줄링 텍스트 전처리)
 def schedule_rawtext_parser(text):
     temp = text.split("\n",2)
     if temp[0].find('~')!=-1:
@@ -53,6 +54,7 @@ def before_request():
         g.search_form=SearchForm()
     #번역관련
     g.locale = str(get_locale())
+
 
 @app.route('/', methods=['GET','POST'])
 
@@ -401,20 +403,20 @@ def needs_credentials():
     # credentials = oauth2.credentials
 
 # 상단 검색바
-# @app.route('/search')
-# @login_required
-# def search():
-#     if not g.search_form.validate():
-#         return redirect(url_for('explore'))
-#     page = request.args.get('page', 1, type=int)
-#     posts, total = Post.search(g.search_form.q.data, page,
-#                                app.config['POSTS_PER_PAGE'])
-#     next_url = url_for('search', q=g.search_form.q.data, page=page + 1) \
-#         if total > page * app.config['POSTS_PER_PAGE'] else None
-#     prev_url = url_for('search', q=g.search_form.q.data, page=page - 1) \
-#         if page > 1 else None
-#     return render_template('search.html', title=_('Search'), posts=posts,
-#                            next_url=next_url, prev_url=prev_url)
+@app.route('/search')
+@login_required
+def search():
+    if not g.search_form.validate():
+        return redirect(url_for('explore'))
+    page = request.args.get('page', 1, type=int)
+    posts, total = Post.search(g.search_form.q.data, page,
+                               app.config['POSTS_PER_PAGE'])
+    next_url = url_for('search', q=g.search_form.q.data, page=page + 1) \
+        if total > page * app.config['POSTS_PER_PAGE'] else None
+    prev_url = url_for('search', q=g.search_form.q.data, page=page - 1) \
+        if page > 1 else None
+    return render_template('search.html', title='Search', posts=posts,
+                           next_url=next_url, prev_url=prev_url)
 
 
 # 구글로그인정보

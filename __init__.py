@@ -35,9 +35,9 @@ app.config['GOOGLE_OAUTH2_CLIENT_SECRETS_FILE'] = '/home/ubuntu/microblog_mysql_
 oauth2 = UserOAuth2(app)
 
 #엘라스틱 써치
-# from elasticsearch import Elasticsearch
-# app.elasticsearch = Elasticsearch([app.config['ELASTICSEARCH_URL']]) \
-#         if app.config['ELASTICSEARCH_URL'] else None
+from elasticsearch import Elasticsearch
+app.elasticsearch = Elasticsearch([app.config['ELASTICSEARCH_URL']]) \
+        if app.config['ELASTICSEARCH_URL'] else None
 
 mail = Mail(app)
 

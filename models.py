@@ -23,46 +23,46 @@ followers = db.Table('followers',
     db.Column('followed_id', db.Integer, db.ForeignKey('user.id'))
 )
 # 엘라스틱써치 찾게하기
-# class SearchableMixin(object):
-#     @classmethod
-#     def search(cls, expression, page, per_page):
-#         ids, total = query_index(cls.__tablename__, expression, page, per_page)
-#         if total == 0:
-#             return cls.query.filter_by(id=0),0
-#         when =[]
-#         for i in range(len(ids)):
-#             when.append((ids[i],i))
-#         return cls.query.filter(cls.id.in_(ids)).order_by(
-#             db.case(when, value=cls.id)),total
-#
-#     @classmethod
-#     def before_commit(cls,session):
-#         session._changes = {
-#             'add' : list(session.new),
-#             'update' : list(session.dirty),
-#             'delete' : list(session.deleted)
-#         }
-#
-#     @classmethod
-#     def after_commit(cls,session):
-#         for obj in session._changes['add']:
-#             if isinstance(odj, SearchableMixin):
-#                 add_to_index(obh.__tablename__, odj)
-#         for obj in session._changes['update']:
-#             if isinstance(obj, SearchableMixin):
-#                 add_to_index(obj.__tablename__, obj)
-#         for obj in session._changes['delete']:
-#             if isinstance(obj, SearchableMixin):
-#                 remove_from_index(obj.__tablename__, obj)
-#         session._changes = None
-#
-#     @classmethod
-#     def reindex(cls):
-#         for obj in cls.query:
-#             add_to_index(cls.__tablename__.obj)
-#
-# db.event.listen(db.session, 'before_commit', SearchableMixin.before_commit)
-# db.event.listen(db.session, 'after_commit', SearchableMixin.after_commit)
+class SearchableMixin(object):
+    @classmethod
+    def search(cls, expression, page, per_page):
+        ids, total = query_index(cls.__tablename__, expression, page, per_page)
+        if total == 0:
+            return cls.query.filter_by(id=0),0
+        when =[]
+        for i in range(len(ids)):
+            when.append((ids[i],i))
+        return cls.query.filter(cls.id.in_(ids)).order_by(
+            db.case(when, value=cls.id)),total
+
+    @classmethod
+    def before_commit(cls,session):
+        session._changes = {
+            'add' : list(session.new),
+            'update' : list(session.dirty),
+            'delete' : list(session.deleted)
+        }
+
+    @classmethod
+    def after_commit(cls,session):
+        for obj in session._changes['add']:
+            if isinstance(odj, SearchableMixin):
+                add_to_index(obh.__tablename__, odj)
+        for obj in session._changes['update']:
+            if isinstance(obj, SearchableMixin):
+                add_to_index(obj.__tablename__, obj)
+        for obj in session._changes['delete']:
+            if isinstance(obj, SearchableMixin):
+                remove_from_index(obj.__tablename__, obj)
+        session._changes = None
+
+    @classmethod
+    def reindex(cls):
+        for obj in cls.query:
+            add_to_index(cls.__tablename__, obj)
+
+db.event.listen(db.session, 'before_commit', SearchableMixin.before_commit)
+db.event.listen(db.session, 'after_commit', SearchableMixin.after_commit)
 
 # 현재 모델은 SQLite3를 사용하고 있다. 나중에 MySQL로 사용하자
 class User(UserMixin, db.Model):
@@ -170,8 +170,8 @@ class User(UserMixin, db.Model):
         return User.query.get(id)
 
 
-class Post(db.Model): #엘라스틱써치 사용시 Post(SearchableMixin, db,Model) 사용
-    # __searchable__ = ['body'] # 엘라스틱서치
+class Post(SearchableMixin, db.Model): #엘라스틱써치 사용시 Post(SearchableMixin, db,Model) 사용
+    __searchable__ = ['body'] # 엘라스틱서치
     id = db.Column(db.Integer, primary_key=True)
     body = db.Column(db.String(1200))
     timestamp = db.Column(db.DateTime, index=True, default=datetime.utcnow)
