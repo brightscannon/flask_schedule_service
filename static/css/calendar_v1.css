@@ -24,9 +24,13 @@
 }
 .calen-schedule{
   display:inline-block;
-  font-size:0.8em;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space: nowrap;
+  font-size:0.5em;
   font-weight:600;
   text-align:center;
+  padding : 0 0 0 0;
 }
 
 .cal-width{

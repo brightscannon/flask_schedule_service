@@ -3,45 +3,28 @@
 
 {%block app_content%}
 
-<div class="calendar-base">
-  <div class="row">
-    <div class="col-xs-7 calendar-YearMonth">2018년 8월</div>
-  </div>
-  <div class="row" style="background:#eeeeee">
-    <div class="col-xs-1 cal-width" style="color:#FF2222; font-weight:800;">Sun</div>
-    <div class="col-xs-1 cal-width">Mon</div>
-    <div class="col-xs-1 cal-width">Tue</div>
-    <div class="col-xs-1 cal-width">Wed</div>
-    <div class="col-xs-1 cal-width">Thr</div>
-    <div class="col-xs-1 cal-width">Fri</div>
-    <div class="col-xs-1 cal-width" style="color:#2222FF; font-weight:800">Sat</div>
-  </div>
-  <table class="weekday">
-    <div class="row day-head">
-      <div class="col-xs-1 cal-width" style="color:#FF2222; font-weight:800">1</div>
-      <div class="col-xs-1 cal-width">2</div>
-      <div class="col-xs-1 cal-width">3</div>
-      <div class="col-xs-1 cal-width">4</div>
-      <div class="col-xs-1 cal-width">5</div>
-      <div class="col-xs-1 cal-width">6</div>
-      <div class="col-xs-1 cal-width" style="color:#2222FF; font-weight:800">7</div>
-    </div>
-    <div class="row">
-      <div class="col-xs-{{8-4}} calen-schedule" style="background:#aabb33">일정예제</div>
-    </div>
-    <div class="row">
-      <div class="col-xs-1 cal-width calen-schedule" style="background:None">내용</div>
-    </div>
-    <div class="row">
-      <div class="col-xs-1 cal-width calen-schedule" style="background:#88ffdd">내용</div>
-    </div>
-    <div class="row">
-      <div class="col-xs-2 calen-schedule" style="background:None">빈칸</div>
-      <div class="col-xs-{{15-12}} calen-schedule" style="background:green; width:{{10*(15-12)}}%;">일정예제2</div>
-    </div>
-  </table>
-</div>
+{%for i in range(1,4)%}
+  {%include 'cal_schedule.html'%}
+{%endfor%}
 
-<br><br>
-
+<input id="LoadScheduleButton" button type="button" class="btn btn-info" value="일정을 더 로드하시려면 여기를 클릭하세요"></input>
+<div id="listDiv"></div>
 {%endblock%}
+
+{% block scripts %}
+{{super()}}
+<script>
+  $(function(){
+    $("#LoadScheduleButton").click(function(){
+      $.ajax({
+        type: 'post' ,
+        url: "{{url_for('cal_week')}}" ,
+        dataType : 'html' ,
+        success: function(data) {
+          $("#listDiv").html(data);
+        }
+      });
+  	})
+  })
+</script>
+{% endblock %}

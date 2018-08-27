@@ -324,6 +324,14 @@ def calendar():
     return render_template('calendar.html', title="bright`s home",
         form=form)#, schedules=schedules.items)
 
+# 일정정보 캘린더(주별)창
+@app.route('/cal_week', methods=['GET','POST'])
+@login_required
+def cal_week():
+    # user = User.query.filter_by(username=username).first_or_404()
+    return render_template('cal_schedule.html')
+
+
 
 #유저정보 팝업창 (ajax)
 @app.route('/user/<username>/popup')
