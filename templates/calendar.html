@@ -3,27 +3,72 @@
 
 {%block app_content%}
 
-{%for i in range(1,4)%}
-  {%include 'cal_schedule.html'%}
-{%endfor%}
+<div class="row">
+  <div class="col-xs-12" style="text-align:center">
+    <button id="LoadBFScheduleButton" button type="button" class="btn btn-info">
+      <span class="glyphicon glyphicon-arrow-up"></span>2주 과거 더보기{{weekdate}}
+    </button>
+  </div>
+</div>
 
-<input id="LoadScheduleButton" button type="button" class="btn btn-info" value="일정을 더 로드하시려면 여기를 클릭하세요"></input>
-<div id="listDiv"></div>
+<div class="calendar-base">
+  <div id="listDiv_before" style="margin:0 0 0 0"></div>
+
+  <div>
+    <p> time_now : {{time_now}} </p>
+  </div>
+
+  {%include 'cal_schedule.html'%}
+
+  <div id="listDiv_after" style="margin:0 0 0 0"></div>
+</div>
+
+<div class="row">
+  <div class="col-xs-12" style="text-align:center">
+    <button id="LoadAFScheduleButton" button type="button" class="btn btn-info">
+      <span class="glyphicon glyphicon-arrow-down"></span>2주 미래 더보기
+    </button>
+  </div>
+</div>
+<br><br>
+
 {%endblock%}
 
 {% block scripts %}
 {{super()}}
 <script>
+  var after_date= '{{(cal_print[-1][-1])}}'.split(' ')[0]
+  var before_date= '{{(cal_print[0][0])}}'.split(' ')[0]
+  ls_after = after_date.split('-')
+  ls_before = before_date.split('-')
+  after = new Date(ls_after[0],ls_after[1]-1,ls_after[2])
+  before = new Date(ls_before[0],ls_before[1]-1,ls_before[2])
+
   $(function(){
-    $("#LoadScheduleButton").click(function(){
+    $("#LoadAFScheduleButton").click(function(){
+      after_date = after.getFullYear()+"-"+(after.getMonth()+1)+"-"+after.getDate()
       $.ajax({
         type: 'post' ,
-        url: "{{url_for('cal_week')}}" ,
+        url: "/cal_week/"+after_date+"/2" ,
         dataType : 'html' ,
         success: function(data) {
-          $("#listDiv").html(data);
+          $("#listDiv_after").append(data); //append(data)<--계속 이어붙일경우 사용,  html(data) <== 한곳에 갱신할경우 사용
         }
       });
+      after.setTime(after.getTime()+14*24*60*60*1000)
+  	})
+
+    $("#LoadBFScheduleButton").click(function(){
+      before_date = before.getFullYear()+"-"+(before.getMonth()+1)+"-"+before.getDate()
+      $.ajax({
+        type: 'post' ,
+        url: "/cal_week/"+before_date+"/-2",
+        dataType : 'html' ,
+        success: function(data) {
+          $("#listDiv_before").prepend(data); //append(data)<--계속 이어붙일경우 사용,  html(data) <== 한곳에 갱신할경우 사용
+        }
+      });
+      before.setTime(before.getTime()-14*24*60*60*1000)
   	})
   })
 </script>

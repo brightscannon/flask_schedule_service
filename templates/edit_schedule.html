@@ -2,11 +2,11 @@
 {%import "bootstrap/wtf.html" as wtf%}
 {%block app_content%}
   <div class="row">
-    <div class="col-md-8">
+    <div class="col-md-7">
       <h1>Edit schedule</h1>
-      <div>{{wtf.quick_form(form)}}</div>
+      <div>{{wtf.quick_form(form)}} <span class="glyphicon glyphicon-ok" aria-hidden="true"></span></div>
       <hr>
-      <div>{{wtf.quick_form(form_trash)}}</div>
+      <div>{{wtf.quick_form(form_trash)}} <span class="glyphicon glyphicon-trash" aria-hidden="true"></span></div>
       <br>
     </div>
   </div>

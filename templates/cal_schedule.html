@@ -1,8 +1,20 @@
+{% for weekdate in cal_print %}
 
-<div class="calendar-base">
+<!-- 월이 넘어가는 구간인지 검사함 -->
+{% if weekdate[0].month != weekdate[6].month or weekdate[0].day == 1 %}
+
+<!-- 켈린더의 월 표시 -->
   <div class="row">
-    <div class="col-xs-7 col-xs-offset-2 calendar-YearMonth" style="width:{{10*(7)}}%;">2018년 8월</div>
+    <div class="col-xs-7 col-xs-offset-2 calendar-YearMonth" style="width:{{10*(7)}}%;">
+      {{weekdate[6].year}}년{{weekdate[6].month}}월
+      <!-- Today가 포함될 월 표시 -->
+      {%if time_now.month == weekdate[6].month and time_now.year == weekdate[6].year %}
+        <span class="label label-danger"><span class="glyphicon glyphicon-flag"></span>Today</span>
+      {%endif%}
+    </div>
   </div>
+
+<!-- 켈린더의 요일표시 -->
   <div class="row" style="background:#eeeeee">
     <div class="col-xs-1 col-xs-offset-2 cal-width" style="color:#FF2222; font-weight:800;">Sun</div>
     <div class="col-xs-1 cal-width">Mon</div>
@@ -12,30 +24,45 @@
     <div class="col-xs-1 cal-width">Fri</div>
     <div class="col-xs-1 cal-width" style="color:#2222FF; font-weight:800">Sat</div>
   </div>
+{%endif%}
+
+<!-- 켈린더 한주 일정 표시(set) -->
   <table class="weekday">
+    <!-- 날짜표시구간 -->
     <div class="row day-head">
-      <div class="col-xs-1 col-xs-offset-2 cal-width" style="color:#FF2222; font-weight:800">1</div>
-      <div class="col-xs-1 cal-width">2</div>
-      <div class="col-xs-1 cal-width">3</div>
-      <div class="col-xs-1 cal-width">4</div>
-      <div class="col-xs-1 cal-width">5</div>
-      <div class="col-xs-1 cal-width">6</div>
-      <div class="col-xs-1 cal-width" style="color:#2222FF; font-weight:800">7</div>
+    {%if time_now.isocalendar()[:2] == weekdate[1].isocalendar()[:2]%}<!--이번주인경우-->
+      {% for wdate in weekdate %}
+        <div class="col-xs-1 {% if weekdate[0]==wdate %}col-xs-offset-2{%endif%} cal-width" style="color:{% if weekdate[0]==wdate %}#FF2222{% elif wdate == -1 %}#dddddd{% elif weekdate[6]==wdate %}#2222FF{%else%}{%endif%}; background-color:#ffeeaa; font-weight:800">
+          {{wdate.day}}{% if time_now.day == wdate.day %} <span style="color:red; font-weight:900"><span class="glyphicon glyphicon-star"></span></span>{%endif%}
+        </div>
+      {%endfor%}
+
+    {%else%}<!--이번주가 아닌경우-->
+      {% for wdate in weekdate %}
+        <div class="col-xs-1 {% if weekdate[0]==wdate %}col-xs-offset-2{%endif%} cal-width" style="color:{% if weekdate[0]==wdate %}#FF2222{% elif wdate == -1 %}#dddddd{% elif weekdate[6]==wdate %}#2222FF{%else%}{%endif%}; font-weight:600">
+          {{wdate.day}}
+        </div>
+      {%endfor%}
+    {%endif%}
+
     </div>
-    <div class="row">
-      <div class="col-xs-{{8-4}} col-xs-offset-2 calen-schedule" style="background:#ff6666; width:{{10*(8-4)}}%;">일정예제</div>
-    </div>
-    <div class="row">
-      <div class="col-xs-1 col-xs-offset-2 cal-width calen-schedule" style="background:None">내용</div>
-    </div>
-    <div class="row">
-      <div class="col-xs-1 col-xs-offset-2 cal-width calen-schedule" style="background:#88ffdd">내용aaaaaaaaaaaaaaaaaaaaaaa</div>
-    </div>
-    <div class="row">
-      <div class="col-xs-2 col-xs-offset-2 calen-schedule" style="background:None; width:{{10*(2)}}%;">빈칸</div>
-      <div class="col-xs-{{15-12}} calen-schedule" style="background:#66ff66; width:{{10*(15-12)}}%;">일정예제2</div>
+
+    <!-- 입력된 일정 뿌리기  -->
+    <div style="height:10em; border-bottom:0.1em solid #ddd; {% if time_now.isocalendar()[:2] == weekdate[1].isocalendar()[:2] %}background-color:#ffeeaa{%endif%}">
+      <div class="row">
+        <div class="col-xs-{{8-4}} col-xs-offset-2 calen-schedule" style="background:#ff6666; width:{{10*(8-4)}}%;">일정예제</div>
+      </div>
+      <div class="row">
+        <div class="col-xs-1 col-xs-offset-2 cal-width calen-schedule" style="background:None">내용</div>
+      </div>
+      <div class="row">
+        <div class="col-xs-1 col-xs-offset-2 cal-width calen-schedule" style="background:#88ffdd">내용aaaaaaaaaaaaaaaaaaaaaaa</div>
+      </div>
+      <div class="row">
+        <div class="col-xs-2 col-xs-offset-2 calen-schedule" style="background:None; width:{{10*(2)}}%;">빈칸</div>
+        <div class="col-xs-{{15-12}} calen-schedule" style="background:#66ff66; width:{{10*(15-12)}}%;">일정예제2</div>
+      </div>
     </div>
   </table>
-</div>
 
-<br><br>
+{% endfor %}

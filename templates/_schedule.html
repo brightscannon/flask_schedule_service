@@ -29,15 +29,15 @@
     </td>
     <td>
       <span id="schedule{{schedule.id}}" style="white-space:pre-line;font-size:1.4em">Title) {{schedule.title}}</span>
-      <p id="schedule{{schedule.id}}" style="font-size:0.9em;font-weight:bold">└ {{schedule.period_start.strftime('%y-%m-%d %H:%M')}}
+      <p id="schedule{{schedule.id}}" style="font-size:0.9em;font-weight:bold">└ {{schedule.period_start.strftime('%y-%m-%d(%a) %H:%M')}}
       {% if schedule.period_start.strftime('%Y-%m-%d %H%M') == schedule.period_end.strftime('%Y-%m-%d %H%M') %}
         시작
       {% elif schedule.period_start.strftime('%Y-%m-%d') == schedule.period_end.strftime('%Y-%m-%d') %}
         ~ {{schedule.period_end.strftime('%H:%M')}} ({{(schedule.period_end-schedule.period_start).seconds/3600}}시간)
       {% elif schedule.period_start.strftime('%Y') == schedule.period_end.strftime('%Y') %}
-        ~ {{schedule.period_end.strftime('%m-%d %H:%M')}} (약 {{(schedule.period_end-schedule.period_start).seconds/(3600*24)}}일)
+        ~ {{schedule.period_end.strftime('%m-%d(%a) %H:%M')}} (약 {{(schedule.period_end-schedule.period_start).seconds/(3600*24)}}일)
       {% else %}
-        ~ {{schedule.period_end.strftime('%y-%m-%d %H:%M')}} (약 {{(schedule.period_end-schedule.period_start).seconds/(3600*24)}}일)
+        ~ {{schedule.period_end.strftime('%y-%m-%d(%a) %H:%M')}} (약 {{(schedule.period_end-schedule.period_start).seconds/(3600*24)}}일)
       {% endif %}
       </p>
 

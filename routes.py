@@ -7,7 +7,6 @@ from app.forms import LoginForm, RegistrationForm, \
 from app.email import send_password_reset_email
 from flask_login import login_required, current_user, login_user, logout_user
 from app.models import User, Post, Notification, Schedule
-from datetime import datetime
 
 from flask import g
 from flask_babel import get_locale
@@ -19,8 +18,11 @@ from app.translate import translate
 from app.forms import MessageForm, SearchForm
 from app.models import Message
 
+from time import *
+from datetime import datetime, timedelta
 # 시간입력정보를 알맞게 파싱해줌
 from dateutil.parser import parse as timeparse
+
 
 # 웹 함수(스케줄링 텍스트 전처리)
 def schedule_rawtext_parser(text):
@@ -34,6 +36,9 @@ def schedule_rawtext_parser(text):
                 ndates.append(timeparse(date.strip()).strftime("%Y-%m-%d %H:%M"))
             except:
                 ndates.append(ndates[0])
+        confirm_time_reverse = (timeparse(ndates[1])-timeparse(ndates[0])).days
+        if confirm_time_reverse < 0:
+            ndates[1] = (timeparse(ndates[1]) + timedelta(days=-confirm_time_reverse)).strftime("%Y-%m-%d %H:%M")
     else:
         due = 0
         ndates = []
@@ -251,6 +256,7 @@ def scheduler():
             return redirect(url_for('scheduler'))
         db.session.add(schedule)
         db.session.commit()
+        # sleep(2)
         flash('New schedule is updated.')
         return redirect(url_for('scheduler'))
     user = {'username':'Bright'}
@@ -315,23 +321,38 @@ def edit_schedule(schedule_id):
         form.rawtext.data = schedule.rawtext
     return render_template('edit_schedule.html', title='Edit schedule', form=form, form_trash=trash_button)
 
-#일정을 달력형태로 보기
+
+#일정을 달력캘린더형태로 보기(현재는 서버사이드로 만들어짐--> 차후 JS로 구현해야함)
 @app.route('/calendar', methods=['GET','POST'])
 @login_required
 def calendar():
     form = ScheduleForm()
     schedules = current_user.schedules.order_by(Schedule.period_start.desc())
-    return render_template('calendar.html', title="bright`s home",
-        form=form)#, schedules=schedules.items)
+    time_now = datetime.utcnow()+timedelta(hours=9) #한국시간 기준(UTC보다 9시간 빠름)
+    monday_delta=(datetime.utcnow()).isocalendar()[2] % 7 # 일요일 기준으로 다시 맞춤
+    cal_print = [[datetime.utcnow()+timedelta(days=date+wk*7-monday_delta) for date in range(0,7)]for wk in range(-1,3)]
 
-# 일정정보 캘린더(주별)창
-@app.route('/cal_week', methods=['GET','POST'])
+    return render_template('calendar.html', title="bright`s home", schedules = schedules,
+                            cal_print=cal_print, time_now=time_now , form=form)#, schedules=schedules.items)
+
+
+# 일정정보 달력캘린더(주별)창
+@app.route('/cal_week/<start_date>/<how_many>', methods=['GET','POST'])
 @login_required
-def cal_week():
+def cal_week(start_date, how_many):
     # user = User.query.filter_by(username=username).first_or_404()
-    return render_template('cal_schedule.html')
+    # print(type(start_date))
+    if int(how_many) > 0:
+        start_datetime = timeparse(start_date)+timedelta(days=1)
+        how_many = int(how_many)
+    else :
+        start_datetime = timeparse(start_date)-timedelta(days=14)
+        how_many = -int(how_many)
+    cal_print = [[start_datetime+timedelta(days=date+wk*7) for date in range(0,7)]for wk in range(0,how_many)]
+    time_now = datetime.utcnow()+timedelta(hours=9) #한국시간 기준(UTC보다 9시간 빠름)
 
-
+    return render_template('cal_schedule.html',
+                                cal_print=cal_print, time_now = time_now)
 
 #유저정보 팝업창 (ajax)
 @app.route('/user/<username>/popup')
