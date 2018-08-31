@@ -183,14 +183,14 @@
                     elem.popover({
                         trigger: 'manual',
                         html: true,
-                        animation: false,
+                        animation: true,
                         container: elem,
                         content: data
                     }).popover('show');
                     flask_moment_render_all();
                 }
             );
-          }, 1000);
+          }, 500);
         },
         function(event){
           //mouse out event handler

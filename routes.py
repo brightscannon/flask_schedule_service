@@ -8,6 +8,8 @@ from app.email import send_password_reset_email
 from flask_login import login_required, current_user, login_user, logout_user
 from app.models import User, Post, Notification, Schedule
 
+from sqlalchemy import and_, or_
+
 from flask import g
 from flask_babel import get_locale
 from guess_language import guess_language
@@ -47,6 +49,55 @@ def schedule_rawtext_parser(text):
         ndates.append(str(ndates[0]))
 
     return ndates, temp
+
+#웹 함수(캘린더 일정 바 표시용 전처리 함수(주별 일정표시row 처리))
+def makeWeekinfo(schedules,starting_time,totalweeks):
+    info_ls = []
+    for i in range(0,totalweeks):
+        restsched = []
+        weekscheds = []
+        week_ls = []
+        cnt = 0
+        cutpoint_back = starting_time+timedelta(days=7*(i+1))
+        cutpoint_front = starting_time+timedelta(days=7*(i))
+        print('cutpoint :',cutpoint_front,cutpoint_back)
+        for sched in schedules: # 스케줄을 1주단위로 쪼개기
+            if sched.period_start < cutpoint_back:
+                weekscheds.append(sched)
+                if sched.period_end >= cutpoint_back:
+                    restsched.append(sched)
+            else:
+                restsched.append(sched)
+        totalcnt = len(weekscheds)
+        # print(totalcnt, weekscheds)
+        while 1: # 스케줄을 row 배치순서로 넣기
+            row_ls = []
+            rests = []
+            latest = timeparse("1970-01-01")
+            recog = 0
+            print('latest : ',latest)
+            if totalcnt <= cnt : # 모든 스케줄을 다 소화했으면 break
+                break
+            for sched in weekscheds: # 1줄당 들어갈 스캐줄 비교
+                temp = timeparse(sched.period_start.strftime('%Y-%m-%d'))
+                if (temp >= latest):
+                    if recog==0:
+                        recog=1
+                        nullsize = (timeparse(sched.period_start.strftime("%Y-%m-%d"))-cutpoint_front).days
+                    else:
+                        nullsize = (timeparse(sched.period_start.strftime("%Y-%m-%d"))-latest).days
+
+                    row_ls.append([nullsize,sched])# 전 공백사이즈 삽입, #스케줄정보 삽입
+                    latest = timeparse(sched.period_end.strftime('%Y-%m-%d')) + timedelta(days=1)
+                    cnt += 1
+                    print(cnt, end="")
+                else :
+                    rests.append(sched)# 남은 내용물 다시 배치
+            week_ls.append(row_ls)
+            weekscheds = rests
+        info_ls.append(week_ls)
+        schedules = restsched
+    return info_ls
 
 
 
@@ -327,13 +378,20 @@ def edit_schedule(schedule_id):
 @login_required
 def calendar():
     form = ScheduleForm()
-    schedules = current_user.schedules.order_by(Schedule.period_start.desc())
-    time_now = datetime.utcnow()+timedelta(hours=9) #한국시간 기준(UTC보다 9시간 빠름)
-    monday_delta=(datetime.utcnow()).isocalendar()[2] % 7 # 일요일 기준으로 다시 맞춤
-    cal_print = [[datetime.utcnow()+timedelta(days=date+wk*7-monday_delta) for date in range(0,7)]for wk in range(-1,3)]
+    time_now = timeparse((datetime.utcnow()+timedelta(hours=9)).strftime('%Y-%m-%d')) #한국시간 기준(UTC보다 9시간 빠름)
+    monday_delta = time_now.isocalendar()[2] % 7 # 일요일 기준으로 다시 맞춤
+    cal_print = [[time_now + timedelta(days=date+wk*7-monday_delta) for date in range(0,7)]for wk in range(-1,3)]
+    starting_time = time_now + timedelta(days=-1*7-monday_delta)
+    ending_time = time_now + timedelta(days=3*7-monday_delta)
+    schedules = current_user.schedules.filter(and_(Schedule.period_end >= starting_time,
+                                                    Schedule.period_start <= ending_time)).order_by(Schedule.period_start.asc())
+    # print(starting_time,monday_delta)
+    # 함수화된 일정순서 전처리 함수
+    weekschedule_info = makeWeekinfo(schedules,starting_time,4)
 
-    return render_template('calendar.html', title="bright`s home", schedules = schedules,
-                            cal_print=cal_print, time_now=time_now , form=form)#, schedules=schedules.items)
+
+    return render_template('calendar.html', title="bright`s home", schedules = weekschedule_info,#schedules, weekschedule=weekschedule_info,
+                            cal_print=cal_print, time_now=time_now , form=form)
 
 
 # 일정정보 달력캘린더(주별)창
@@ -342,16 +400,22 @@ def calendar():
 def cal_week(start_date, how_many):
     # user = User.query.filter_by(username=username).first_or_404()
     # print(type(start_date))
+    # schedules = current_user.schedules.order_by(Schedule.period_start.desc())
     if int(how_many) > 0:
         start_datetime = timeparse(start_date)+timedelta(days=1)
         how_many = int(how_many)
     else :
         start_datetime = timeparse(start_date)-timedelta(days=14)
         how_many = -int(how_many)
-    cal_print = [[start_datetime+timedelta(days=date+wk*7) for date in range(0,7)]for wk in range(0,how_many)]
+    starting_time = timeparse(start_datetime.strftime('%Y-%m-%d'))
+    ending_time = (starting_time+timedelta(days=how_many*7))
+    schedules = current_user.schedules.filter(and_(Schedule.period_end >= starting_time,
+                                                    Schedule.period_start <= ending_time)).order_by(Schedule.period_start.asc())
+    cal_print = [[starting_time+timedelta(days=date+wk*7) for date in range(0,7)]for wk in range(0,how_many)]
     time_now = datetime.utcnow()+timedelta(hours=9) #한국시간 기준(UTC보다 9시간 빠름)
+    weekschedule_info = makeWeekinfo(schedules,starting_time,how_many)
 
-    return render_template('cal_schedule.html',
+    return render_template('cal_schedule.html', schedules = weekschedule_info, # schedules,
                                 cal_print=cal_print, time_now = time_now)
 
 #유저정보 팝업창 (ajax)

@@ -14,11 +14,21 @@
 <div class="calendar-base">
   <div id="listDiv_before" style="margin:0 0 0 0"></div>
 
-  <div>
-    <p> time_now : {{time_now}} </p>
-  </div>
 
   {%include 'cal_schedule.html'%}
+
+  {%for weeks in schedules%}
+    {%for row in weeks%}
+    <p>
+      {%for div in row%}
+        {{div[1].period_start.day, div[1].period_end.day, div[1].title}}
+      {%endfor%}
+      <p>--row--</p>
+    </p>
+    {%endfor%}
+    <p>---------------------------weeks-------------------------</p>
+  {%endfor%}
+
 
   <div id="listDiv_after" style="margin:0 0 0 0"></div>
 </div>
